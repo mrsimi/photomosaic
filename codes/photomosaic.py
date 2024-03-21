@@ -162,5 +162,5 @@ if __name__=="__main__":
     target_path = 'img/target.jpeg'
     pallet_images_path = ['img/pallet1.webp','img/pallet3.jpeg', 
                             'img/download.jpeg','img/download2.jpeg', 'img/download3.jpeg', 'img/download4.jpeg']
-    photomosaic = Photomosaicv2(target_path, pallet_images_path)
+    photomosaic = Photomosaicv2(target_path, pallet_images_path, 20, 50)
     photomosaic.transform()
