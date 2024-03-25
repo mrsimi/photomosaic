@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, send_file
 from PIL import Image
 from io import BytesIO
 import os
-from photomosaic import Photomosaicv2
+from photomosaic import Photomosaic
 import tempfile
 import cv2
 import io
@@ -34,7 +34,7 @@ def upload_form():
             single_file.save(single_file_path)
             target_file_path = single_file_path
 
-        transformed_img_path = Photomosaicv2(target_file_path, tile_file_path, 10, 10).transform(temp_dir.name)
+        transformed_img_path = Photomosaic(target_file_path, tile_file_path, 10, 10).transform(temp_dir.name)
         print(transformed_img_path)
         return send_file(transformed_img_path, as_attachment=True)
 

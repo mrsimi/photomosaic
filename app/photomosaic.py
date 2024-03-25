@@ -5,108 +5,21 @@ import uuid
 import cv2
 import numpy as np
 import os
-from sklearn.cluster import MiniBatchKMeans
 import imutils
 
 class Photomosaic:
-    def __init__(self, target_path, pallet_images_path:list[str], rows=10, columns=10):
-        self.target = cv2.imread(target_path) 
-        self.target_path = target_path
-        self.pallet_images_path = pallet_images_path
-        self.rows = rows
-        self.columns = columns
-        self.image_parts = []
-        height, width, _ = self.target.shape
-        self.part_height = height // self.rows
-        self.part_width = width // self.columns
-        self.color_image_parts = []
-
-    def compare_histograms(image_path, reference_histogram):
-        image = cv2.imread(image_path)
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        hist = cv2.calcHist([image_rgb], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
-        cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
-        bhattacharyya_distance = cv2.compareHist(hist, reference_histogram, cv2.HISTCMP_BHATTACHARYYA)
-        return bhattacharyya_distance
-
-    
-    def color_match(self, target_image):
-        given_image_rgb = cv2.cvtColor(target_image, cv2.COLOR_BGR2RGB)
-        given_hist = cv2.calcHist([given_image_rgb], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
-        cv2.normalize(given_hist, given_hist, 0, 1, cv2.NORM_MINMAX)
-
-        results = {}
-        for pallet_path in self.pallet_images_path:
-            bhattacharyya_distance = self.compare_histograms(pallet_image, given_hist)
-            results[pallet_path] = bhattacharyya_distance
-
-        most_similar_image = min(results, key=results.get)
-        # pallet_image = random.choice(self.pallet_images_path)
-        
-        target_image = cv2.imread(target_image)
-        pallet_image = cv2.imread(most_similar_image)
-        pallet_image = cv2.resize(pallet_image, (target_image.shape[1], target_image.shape[0]))
-
-        img1_lab = cv2.cvtColor(target_image, cv2.COLOR_BGR2LAB)
-        img2_lab = cv2.cvtColor(pallet_image, cv2.COLOR_BGR2LAB)
-        
-        img1_mean, img1_std = cv2.meanStdDev(img1_lab)
-        img2_mean, img2_std = cv2.meanStdDev(img2_lab)
-
-        for i in range(3):  # Iterate over L, A, B channels
-            img1_lab[:,:,i] = img1_lab[:,:,i] - img1_mean[i]
-            img1_lab[:,:,i] = img1_lab[:,:,i] * (img2_std[i] / img1_std[i])
-            img1_lab[:,:,i] = img1_lab[:,:,i] + img2_mean[i]
-        
-        matched_img = cv2.cvtColor(img1_lab, cv2.COLOR_LAB2BGR)
-        return matched_img
-    
-    def split_images(self):
-        image_parts = []
-        for row in range(self.rows):
-            for col in range(self.columns):
-                start_row = row * self.part_height
-                end_row = (row + 1) * self.part_height
-                start_col = col * self.part_width
-                end_col = (col + 1) * self.part_width
-
-                part = self.target[start_row:end_row, start_col:end_col]
-                image_parts.append(part)
-                
-        for i, part in enumerate(image_parts):
-            #print('writing to part')
-            cv2.imwrite(f'part_{i+1}.jpg', part)
-    
-    def color_and_combine_images(self):
-        for i in range(1, self.rows*self.columns + 1):  
-            part = self.color_match(f'part_{i}.jpg')
-            self.color_image_parts.append(part)
-            
-        combined_height = self.rows * self.part_height
-        combined_width = self.columns * self.part_width
-
-        combined_image = np.zeros((combined_height, combined_width, 3), dtype=np.uint8)
-        for i, part in enumerate(self.color_image_parts):
-            row = i // self.rows
-            col = i % self.columns
-            start_row = row * self.part_height
-            end_row = (row + 1) * self.part_height
-            start_col = col * self.part_width
-            end_col = (col + 1) * self.part_width
-            combined_image[start_row:end_row, start_col:end_col] = part
-        
-        cv2.imwrite('combined_image.jpg', combined_image)
-    
-    def transform(self):
-        self.split_images()
-        self.color_and_combine_images()
-
-
-class Photomosaicv2:
-    def __init__(self, target_path, pallet_images_path, num_tiles_horizontal=5, num_tiles_vertical=5):
+    def __init__(self, target_path, pallet_images_path, num_tiles_horizontal=10, num_tiles_vertical=10):
         self.large_image = cv2.imread(target_path)
+        self.large_image = imutils.resize(self.large_image, width=4096)
         self.tile_size = self.calculate_tile_size(self.large_image, num_tiles_horizontal, num_tiles_vertical)
-        self.resized_tiles = [self.crop_image(cv2.imread(img), self.tile_size[0], self.tile_size[1]) for img in pallet_images_path]
+        self.tile_images = [cv2.imread(img) for img in pallet_images_path]
+    
+    def calculate_tile_size(self, large_image, num_horizontal_tiles, num_vertical_tiles):
+        rectangle_height = large_image.shape[0]
+        rectangle_width = large_image.shape[1]
+        tile_width = rectangle_width / num_horizontal_tiles
+        tile_height = rectangle_height / num_vertical_tiles
+        return int(tile_width), int(tile_height)
     
     def crop_image(self, image, crop_width, crop_height):
         max_resize = max(crop_height, crop_width, image.shape[0],image.shape[1])
@@ -123,11 +36,6 @@ class Photomosaicv2:
 
         return cropped_image
     
-    def calculate_tile_size(self, large_image, num_tiles_horizontal, num_tiles_vertical):
-        height, width, _ = large_image.shape
-        tile_width = width // num_tiles_horizontal
-        tile_height = height // num_tiles_vertical
-        return tile_width, tile_height
     
     def color_match_and_blend(self, region, tile):
         # Resize the tile to match the size of the region
@@ -149,30 +57,22 @@ class Photomosaicv2:
     def transform(self, output_path):
         output_image = str(uuid.uuid4())+'_matched_image.jpg'
         window_size = self.tile_size  # Adjust window size as needed
-        if self.large_image.shape[1] < 1000 or self.large_image.shape[0] < 1000:
-            new_width = 2 * self.large_image.shape[1]  # Double the width
-            new_height = 2 * self.large_image.shape[0]  # Double the height
-
-            # Resize the image using OpenCV's resize function
-            self.large_image = cv2.resize(self.large_image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-
         mosaic = np.zeros_like(self.large_image)
         used_tiles = []
-        used_tiles_length = len(self.resized_tiles)/2
+        used_tiles_length = len(self.tile_size)/2
 
-        for y in range(0, self.large_image.shape[0], window_size[1]):
-            for x in range(0, self.large_image.shape[1], window_size[0]):
-                region = self.large_image[y:y + window_size[1], x:x + window_size[0]]
-                #print(region.shape)
+        for y in range(0, self.large_image.shape[0], self.tile_size[1]):
+            for x in range(0, self.large_image.shape[1], self.tile_size[0]): 
+                region = self.large_image[y:y + self.tile_size[1], x:x + self.tile_size[0]]
                 region_avg_color = np.mean(region, axis=(0, 1))  
                 min_diffs = []  # List to store minimum differences
                 best_tiles = []
                 
-                for tile in self.resized_tiles:
+                for tile in self.tile_images:
                     tile_avg_color = np.mean(tile, axis=(0, 1))
                     color_diff = np.linalg.norm(region_avg_color - tile_avg_color)
-                    
-                    # Update min_diffs and best_tiles with top three minimum differences and corresponding tiles
+                            
+                            # Update min_diffs and best_tiles with top three minimum differences and corresponding tiles
                     if len(min_diffs) < 3:
                         min_diffs.append(color_diff)
                         best_tiles.append(tile)
@@ -182,33 +82,20 @@ class Photomosaicv2:
                             min_diffs[max_diff_index] = color_diff
                             best_tiles[max_diff_index] = tile
 
-                # Randomly select one tile from the top three minimum differences
+                        # Randomly select one tile from the top three minimum differences
                 random_index = random.randint(0, 2)  # Random index between 0 and 2
                 best_tile = best_tiles[random_index]
 
-                # Add the selected tile to the used_tiles list
+                        # Add the selected tile to the used_tiles list
                 used_tiles.append(best_tile)
 
-                # Remove the oldest tile from used_tiles if necessary
+                        # Remove the oldest tile from used_tiles if necessary
                 if len(used_tiles) > used_tiles_length:
                     used_tiles.pop(0)
                 
-                # Replace the region in the mosaic with the best matching tile
-                blended_region = self.color_match_and_blend(region, best_tile)   
-                #print(blended_region) 
-                img_curr = imutils.resize(blended_region,width=region.shape[1], height=region.shape[0]) 
-                mosaic[y:y + window_size[1], x:x + window_size[0]] = img_curr
-
-                cv2.imwrite(f'{str(uuid.uuid4())}_01.jpg', img_curr)
+                blended_region = self.color_match_and_blend(region, self.crop_image(best_tile, crop_height=self.tile_size[1], crop_width=self.tile_size[0]))  
+                mosaic[y:y + self.tile_size[1], x:x + self.tile_size[0]] = imutils.resize(blended_region,width=region.shape[1], height=region.shape[0]) 
 
         output_path = os.path.join(output_path, output_image)
-        print(output_path)
         cv2.imwrite(output_path, mosaic)
         return output_path
-
-if __name__=="__main__":
-    target_path = 'img/target.jpeg'
-    pallet_images_path = ['img/pallet1.webp','img/pallet3.jpeg', 
-                            'img/download.jpeg','img/download2.jpeg', 'img/download3.jpeg', 'img/download4.jpeg']
-    photomosaic = Photomosaicv2(target_path, pallet_images_path, len(pallet_images_path), len(pallet_images_path))
-    photomosaic.transform()
