@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>photomosaicapp</title>
+    <style>
+        *,
+        html,
+        body,
+        button,
+        input {
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .container {
+            width: 500px;
+        }
+
+        #imageView {
+            height: 400px;
+            width: 400px;
+            margin: 10px auto;
+        }
+
+        #imageView img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .content {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type=file]::file-selector-button {
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+    <p>Photomosaic app</p>
+    <form id="uploadForm" action="/" method="post" enctype="multipart/form-data" class="container">
+        <div class="content">
+            <label for="multi_files">Choose tile images:</label>
+            <input id="multi_files" type="file" name="multi_files" accept="image/*" multiple />
+        </div>
+
+        <br> <br>
+        <div class="content">
+            <label for="single_file">Choose Target image:</label>
+            <input id="single_file" type="file" name="single_file" accept="image/*" onchange="previewImage(event)" />
+        </div>
+
+        <div id="imageView"></div>
+        <div>
+            <input type="submit" value="Generate Mosaic" class="container" />
+        </div>
+    </form>
+
+    <script>
+        function previewImage(event) {
+            var file = event.target.files[0];
+            console.log(file)
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var imageView = document.getElementById('imageView');
+                    imageView.innerHTML = ''; // Clear previous content
+                    var img = document.createElement('img');
+                    img.src = e.target.result;
+                    imageView.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+
+</html>

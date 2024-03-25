@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import os
 from sklearn.cluster import MiniBatchKMeans
+import imutils
 
 class Photomosaic:
     def __init__(self, target_path, pallet_images_path:list[str], rows=10, columns=10):
@@ -105,7 +106,22 @@ class Photomosaicv2:
     def __init__(self, target_path, pallet_images_path, num_tiles_horizontal=5, num_tiles_vertical=5):
         self.large_image = cv2.imread(target_path)
         self.tile_size = self.calculate_tile_size(self.large_image, num_tiles_horizontal, num_tiles_vertical)
-        self.resized_tiles = [cv2.resize(cv2.imread(img), self.tile_size) for img in pallet_images_path]
+        self.resized_tiles = [self.crop_image(cv2.imread(img), self.tile_size[0], self.tile_size[1]) for img in pallet_images_path]
+    
+    def crop_image(self, image, crop_width, crop_height):
+        max_resize = max(crop_height, crop_width, image.shape[0],image.shape[1])
+        if max_resize < crop_height or max_resize < crop_width:
+            max_resize = 2 * max_resize
+        image = imutils.resize(image, width=max_resize)
+
+        image_height, image_width = image.shape[:2]
+        start_x = (image_width - crop_width) // 2
+        end_x = start_x + crop_width
+        start_y = (image_height - crop_height) // 2
+        end_y = start_y + crop_height
+        cropped_image = image[start_y:end_y, start_x:end_x]
+
+        return cropped_image
     
     def calculate_tile_size(self, large_image, num_tiles_horizontal, num_tiles_vertical):
         height, width, _ = large_image.shape
@@ -130,33 +146,65 @@ class Photomosaicv2:
         
         return blended_region
 
-    def transform(self):
+    def transform(self, output_path):
         output_image = str(uuid.uuid4())+'_matched_image.jpg'
         window_size = self.tile_size  # Adjust window size as needed
+        if self.large_image.shape[1] < 1000 or self.large_image.shape[0] < 1000:
+            new_width = 2 * self.large_image.shape[1]  # Double the width
+            new_height = 2 * self.large_image.shape[0]  # Double the height
+
+            # Resize the image using OpenCV's resize function
+            self.large_image = cv2.resize(self.large_image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+
         mosaic = np.zeros_like(self.large_image)
+        used_tiles = []
+        used_tiles_length = len(self.resized_tiles)/2
 
         for y in range(0, self.large_image.shape[0], window_size[1]):
             for x in range(0, self.large_image.shape[1], window_size[0]):
                 region = self.large_image[y:y + window_size[1], x:x + window_size[0]]
                 #print(region.shape)
-                region_avg_color = np.mean(region, axis=(0, 1))  # Compute average color of the region
+                region_avg_color = np.mean(region, axis=(0, 1))  
+                min_diffs = []  # List to store minimum differences
+                best_tiles = []
                 
-                # Find the best matching tile image based on average color difference
-                min_diff = float('inf')
-                best_tile = None
                 for tile in self.resized_tiles:
                     tile_avg_color = np.mean(tile, axis=(0, 1))
                     color_diff = np.linalg.norm(region_avg_color - tile_avg_color)
-                    if color_diff < min_diff:
-                        min_diff = color_diff
-                        best_tile = tile
+                    
+                    # Update min_diffs and best_tiles with top three minimum differences and corresponding tiles
+                    if len(min_diffs) < 3:
+                        min_diffs.append(color_diff)
+                        best_tiles.append(tile)
+                    else:
+                        max_diff_index = min_diffs.index(max(min_diffs))
+                        if color_diff < min_diffs[max_diff_index]:
+                            min_diffs[max_diff_index] = color_diff
+                            best_tiles[max_diff_index] = tile
+
+                # Randomly select one tile from the top three minimum differences
+                random_index = random.randint(0, 2)  # Random index between 0 and 2
+                best_tile = best_tiles[random_index]
+
+                # Add the selected tile to the used_tiles list
+                used_tiles.append(best_tile)
+
+                # Remove the oldest tile from used_tiles if necessary
+                if len(used_tiles) > used_tiles_length:
+                    used_tiles.pop(0)
                 
                 # Replace the region in the mosaic with the best matching tile
-                blended_region = self.color_match_and_blend(region, best_tile)    
-                mosaic[y:y + window_size[1], x:x + window_size[0]] = cv2.resize(blended_region,(region.shape[1], region.shape[0]))
-        
-        cv2.imwrite(output_image, mosaic)
-        return output_image
+                blended_region = self.color_match_and_blend(region, best_tile)   
+                #print(blended_region) 
+                img_curr = imutils.resize(blended_region,width=region.shape[1], height=region.shape[0]) 
+                mosaic[y:y + window_size[1], x:x + window_size[0]] = img_curr
+
+                cv2.imwrite(f'{str(uuid.uuid4())}_01.jpg', img_curr)
+
+        output_path = os.path.join(output_path, output_image)
+        print(output_path)
+        cv2.imwrite(output_path, mosaic)
+        return output_path
 
 if __name__=="__main__":
     target_path = 'img/target.jpeg'
