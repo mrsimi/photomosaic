@@ -6,13 +6,16 @@ import cv2
 import numpy as np
 import os
 import imutils
+import tqdm
 
 class Photomosaic:
-    def __init__(self, target_path, pallet_images_path, num_tiles_horizontal=10, num_tiles_vertical=10):
+    def __init__(self, target_path, pallet_images_path, num_tiles_horizontal=10, num_tiles_vertical=10, tile_opacity=40):
         self.large_image = cv2.imread(target_path)
-        self.large_image = imutils.resize(self.large_image, width=4096)
+        self.large_image = imutils.resize(self.large_image, width=5000)
         self.tile_size = self.calculate_tile_size(self.large_image, num_tiles_horizontal, num_tiles_vertical)
         self.tile_images = [cv2.imread(img) for img in pallet_images_path]
+        self.mosaic = np.zeros_like(self.large_image)
+        self.tile_opacity = tile_opacity
     
     def calculate_tile_size(self, large_image, num_horizontal_tiles, num_vertical_tiles):
         rectangle_height = large_image.shape[0]
@@ -23,17 +26,29 @@ class Photomosaic:
     
     def crop_image(self, image, crop_width, crop_height):
         max_resize = max(crop_height, crop_width, image.shape[0],image.shape[1])
-        if max_resize < crop_height or max_resize < crop_width:
-            max_resize = 2 * max_resize
+        # max_resize = 2 * max_resize
+
+        #print(max_resize)
         image = imutils.resize(image, width=max_resize)
-
+        #print(image.shape)
+        # Calculate center coordinates
         image_height, image_width = image.shape[:2]
-        start_x = (image_width - crop_width) // 2
-        end_x = start_x + crop_width
-        start_y = (image_height - crop_height) // 2
-        end_y = start_y + crop_height
+        center_x = image_width // 2
+        center_y = image_height // 2
+        
+        # Calculate half of the crop dimensions
+        half_crop_width = crop_width // 2
+        half_crop_height = crop_height // 2
+        
+        # Calculate crop boundaries
+        start_x = center_x - half_crop_width
+        end_x = center_x + half_crop_width
+        start_y = center_y - half_crop_height
+        end_y = center_y + half_crop_height
+        
+        # Crop the image from the center
         cropped_image = image[start_y:end_y, start_x:end_x]
-
+        
         return cropped_image
     
     
@@ -49,53 +64,78 @@ class Photomosaic:
         color_diff = np.linalg.norm(region_avg_color - tile_avg_color)
         
         # Blend the region and resized tile based on color similarity
-        alpha = 1.0 - (color_diff / 255.0)  # Adjust alpha based on color difference
-        blended_region = cv2.addWeighted(region, alpha, tile_resized, 1.0 - alpha, 0)
+        #alpha = 1.0 - (color_diff / 255.0)  # Adjust alpha based on color difference
+        #print(alpha)
+        alpha = self.tile_opacity/100
+        print(alpha)
+        blended_region = cv2.addWeighted(region, 1-alpha, tile_resized, alpha, 0)
         
         return blended_region
+    
+    @staticmethod
+    def is_matrix_present(target_matrix, matrix_list):
+        for matrix in matrix_list:
+            if np.array_equal(target_matrix, matrix):
+                return True
+        return False
 
-    def transform(self, output_path):
-        output_image = str(uuid.uuid4())+'_matched_image.jpg'
-        window_size = self.tile_size  # Adjust window size as needed
-        mosaic = np.zeros_like(self.large_image)
+    def get_best_tile(self, used_tiles, best_tiles):
+        return best_tiles[0]
+        random_index = random.randint(0, len(best_tiles)-1)
+        best_tile = best_tiles[random_index]
+        return best_tile
+
+    def transform(self):
         used_tiles = []
-        used_tiles_length = len(self.tile_size)/2
 
+        total_tiles = (self.large_image.shape[0] // self.tile_size[1]) * (self.large_image.shape[1] // self.tile_size[0])
+        print(f'total tiles {total_tiles}')
+        #progress_bar = tqdm(total=total_tiles, desc="Transforming", unit=" tiles")
+        done_tiles = 0
+        
         for y in range(0, self.large_image.shape[0], self.tile_size[1]):
             for x in range(0, self.large_image.shape[1], self.tile_size[0]): 
                 region = self.large_image[y:y + self.tile_size[1], x:x + self.tile_size[0]]
                 region_avg_color = np.mean(region, axis=(0, 1))  
                 min_diffs = []  # List to store minimum differences
                 best_tiles = []
+                color_diff_dict = {}
                 
                 for tile in self.tile_images:
-                    tile_avg_color = np.mean(tile, axis=(0, 1))
-                    color_diff = np.linalg.norm(region_avg_color - tile_avg_color)
-                            
-                            # Update min_diffs and best_tiles with top three minimum differences and corresponding tiles
-                    if len(min_diffs) < 3:
-                        min_diffs.append(color_diff)
-                        best_tiles.append(tile)
-                    else:
-                        max_diff_index = min_diffs.index(max(min_diffs))
-                        if color_diff < min_diffs[max_diff_index]:
-                            min_diffs[max_diff_index] = color_diff
-                            best_tiles[max_diff_index] = tile
+                    if self.is_matrix_present(tile, used_tiles) == False:
+                        tile_avg_color = np.mean(tile, axis=(0, 1))
+                        color_diff = np.linalg.norm(region_avg_color - tile_avg_color)
+                        color_diff_dict[color_diff] = tile
+                
+                smallest_color_diffs = sorted(color_diff_dict.keys())[:3]
+                smallest_color_diff_tiles = [color_diff_dict[diff] for diff in smallest_color_diffs]
 
+                #print(f'used tiles {len(used_tiles)}')
+                #print(f'smallest_color_diff_tiles  {len(smallest_color_diff_tiles)}')
                         # Randomly select one tile from the top three minimum differences
-                random_index = random.randint(0, 2)  # Random index between 0 and 2
-                best_tile = best_tiles[random_index]
+                best_tile = self.get_best_tile(used_tiles, smallest_color_diff_tiles)
 
-                        # Add the selected tile to the used_tiles list
                 used_tiles.append(best_tile)
 
-                        # Remove the oldest tile from used_tiles if necessary
-                if len(used_tiles) > used_tiles_length:
+                if len(used_tiles) > int(len(self.tile_images)/2):
+                    #print('popping')
                     used_tiles.pop(0)
-                
-                blended_region = self.color_match_and_blend(region, self.crop_image(best_tile, crop_height=self.tile_size[1], crop_width=self.tile_size[0]))  
-                mosaic[y:y + self.tile_size[1], x:x + self.tile_size[0]] = imutils.resize(blended_region,width=region.shape[1], height=region.shape[0]) 
 
+                blended_region = self.color_match_and_blend(region, self.crop_image(best_tile, crop_height=region.shape[0], crop_width=region.shape[1]))  
+                self.mosaic[y:y + self.tile_size[1], x:x + self.tile_size[0]] = blended_region
+
+                done_tiles +=1
+                yield f'{done_tiles}/{total_tiles}'
+                #print(f'done tiles {done_tiles} / {total_tiles}')
+
+                #progress_bar.update(1) 
+        
+        #progress_bar.close()
+
+       
+
+    def save_image(self, output_path):
+        output_image = str(uuid.uuid4())+'_matched_image.jpg'
         output_path = os.path.join(output_path, output_image)
-        cv2.imwrite(output_path, mosaic)
+        cv2.imwrite(output_path,self. mosaic)
         return output_path
