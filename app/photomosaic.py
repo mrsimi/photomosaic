@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import os
 import imutils
-import tqdm
 
 class Photomosaic:
     def __init__(self, target_path, pallet_images_path, num_tiles_horizontal=10, num_tiles_vertical=10, tile_opacity=40):
@@ -67,7 +66,7 @@ class Photomosaic:
         #alpha = 1.0 - (color_diff / 255.0)  # Adjust alpha based on color difference
         #print(alpha)
         alpha = self.tile_opacity/100
-        print(alpha)
+        #print(alpha)
         blended_region = cv2.addWeighted(region, 1-alpha, tile_resized, alpha, 0)
         
         return blended_region
@@ -85,7 +84,7 @@ class Photomosaic:
         best_tile = best_tiles[random_index]
         return best_tile
 
-    def transform(self):
+    def transform(self, output_path):
         used_tiles = []
 
         total_tiles = (self.large_image.shape[0] // self.tile_size[1]) * (self.large_image.shape[1] // self.tile_size[0])
@@ -125,12 +124,15 @@ class Photomosaic:
                 self.mosaic[y:y + self.tile_size[1], x:x + self.tile_size[0]] = blended_region
 
                 done_tiles +=1
-                yield f'{done_tiles}/{total_tiles}'
+                #yield f'{done_tiles}/{total_tiles}'
                 #print(f'done tiles {done_tiles} / {total_tiles}')
 
                 #progress_bar.update(1) 
         
-        #progress_bar.close()
+        output_image = str(uuid.uuid4())+'_matched_image.jpg'
+        output_path = os.path.join(output_path, output_image)
+        cv2.imwrite(output_path,self. mosaic)
+        return output_path
 
        
 

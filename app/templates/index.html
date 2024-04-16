@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <title>photomosaicapp</title>
     <style>
         *,
@@ -11,7 +14,7 @@
         body,
         button,
         input {
-            font-family: 'Helvetica', Arial, sans-serif;
+            font-family: 'Inter', Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -32,12 +35,7 @@
             width: 500px;
         }
 
-        #imageView {
-            height: 400px;
-            width: 400px;
-            margin: 0 auto;
-            background-color: black;
-        }
+       
 
         #imageView img {
             width: 100%;
@@ -84,6 +82,7 @@
             background-color: #F8F8F8;
             padding: 30px;
             margin-right: 10px;
+            border-radius: 10px;
 
         }
 
@@ -92,23 +91,20 @@
             background-color: #F8F8F8;
             padding-bottom: 30px;
             padding: 20px;
+            border-radius: 10px;
         }
 
         label {
             display: block;
-            font-size: .8rem;
-            background-color: #1E1E1E;
-            color: #fff;
-            text-align: center;
+            font-weight: bold;
             padding: 5px;
-            margin: 5px;
+            margin: 10px 0px;
             border-radius: 5px;
         }
         .counter-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 14px;
           }
           button {
             padding: 5px 10px;
@@ -117,8 +113,9 @@
           }
           .btn{
             width: 100%;
-            margin-top: 10px;
+            margin: 10px 0px;
             padding: 5px;
+            box-shadow: 1px .5px 1px 1px black inset;
           }
           .slider-container {
             width: 100%;
@@ -127,6 +124,27 @@
           .slider {
             width: 100%;
           }
+          
+
+        @media screen and (max-width: 768px) {
+            .headerContent{
+                width: 100%;
+            }
+            .formContent{
+                flex-direction: column;
+            }
+            #imageView {
+                width: 100%;
+            }
+            .firstPart, .secondPart {
+                width: 90%;
+                margin: 0 auto;
+            }
+           
+            section {
+                width: 100%;
+            }
+        }
         
     </style>
 </head>
@@ -140,42 +158,52 @@
     </header>
     <section>
 
-        <p style="text-align: center;">Free Online Photo Mosaic App</p>
+        <h3 style="text-align: center;">Free Online Photo Mosaic App</h3>
         <p style="text-align: center;">Create stunning photo mosaics with your images</p>
         <div>
             <form id="uploadForm" action="/" method="post" enctype="multipart/form-data" class="formContent">
                 <div class="firstPart">
                     <div id="imageView"></div>
+                    <div>
+                        <p>
+
+                        </p>
+                    </div>
                 </div>
                 <div class="secondPart">
-                    <label for="single_file">Step 1: Add Main Picture</label>
+                    <label for="single_file">1. Add Main Picture</label>
                     <input id="single_file" type="file" name="single_file" accept="image/*"
                         onchange="previewImage(event)" />
-                    <label for="multi_files">Step 2: Choose tile images</label>
+                    <label for="multi_files">2. Choose tile images</label>
                     <input id="multi_files" type="file" name="multi_files" accept="image/*" multiple />
-                    <label for="multi_files">Step 3: Number of horizontal tiles</label>
+                    <label for="multi_files">3. Number of Rows and Columns</label>
                     <div class="counter-container">
+                        <span>Rows:</span>
                         <button type="button" onclick="decrease()">-</button>
                         <span id="counter" name="counter">10</span>
                         <button type="button" onclick="increase()">+</button>
+                        <span>Columns:</span>
+                        <button type="button" onclick="decreaseVer()">-</button>
+                        <span id="counterVer" name="counterVer">10</span>
+                        <button type="button" onclick="increaseVer()">+</button>
                       </div>
 
-                      <label for="multi_files">Step 4: Number of Vertical tiles</label>
-                      <div class="counter-container">
-                          <button type="button" onclick="decreaseVer()">-</button>
-                          <span id="counterVer" name="counterVer">10</span>
-                          <button type="button" onclick="increaseVer()">+</button>
-                        </div>
 
-                        <label for="slider">Step 5: Choose opacity of the tile images</label>
+                        <label for="slider">4. Choose opacity of the tile images</label>
                         <input type="range" id="slider" name="slider" min="20" max="100" value="50" onchange="updateValue(this.value)" class="slider">
                         <p id="sliderValue" style="text-align: center; margin:0px">50</p>
 
-                        <label for="single_file">Step 5: Generate and Download Mosaic</label>
+                        <label for="single_file">5. Generate and Download Mosaic</label>
 
                         <input type="hidden" id="hor_tile" name="hor_tile">
                         <input type="hidden" id="ver_tile" name="ver_tile">
                         <input type="submit" value="Generate Mosaic" class="btn"/>
+                        
+                        <p>Sample of a photographic mosaic:</p>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Mosaicr_seagull.jpg/800px-Mosaicr_seagull.jpg" width="100%"/>
+                        <p>
+                            Mosaic of a seagull (using birds and other nature imagery as hexagonal tiles). <a href="https://en.wikipedia.org/wiki/File:Mosaicr_seagull.jpg">[Wikipedia]</a>
+                        </p>
                 </div>
             </form>
         </div>

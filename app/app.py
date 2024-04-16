@@ -1,20 +1,11 @@
 from flask import Flask, render_template, request, send_file
-from flask_socketio import SocketIO, emit
-from PIL import Image
-from io import BytesIO
 import os
 from photomosaic import Photomosaic
 import tempfile
-import cv2
-import io
+from utils import increase_count
 
 app = Flask(__name__)
-#socketio = SocketIO(app)
-# Configure upload folder
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-upload_percent = '0/100'
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_form():
@@ -26,9 +17,9 @@ def upload_form():
     if request.method == 'POST':
         print(request.form.get('hor_tile)'))
         # Handle multiple image upload
-        hor_tiles = int(request.form['hor_tile'])
-        ver_tiles = int(request.form['ver_tile'])
-        tile_opacity = int(request.form['slider'])
+        hor_tiles = int(request.form['hor_tile']) if request.form['hor_tile'] else 10
+        ver_tiles = int(request.form['ver_tile']) if request.form['ver_tile'] else 10
+        tile_opacity = int(request.form['slider']) if request.form['slider'] else 50
 
         print(tile_opacity)
         print(ver_tiles)
@@ -48,17 +39,13 @@ def upload_form():
             single_file.save(single_file_path)
             target_file_path = single_file_path
 
-        photomosaic = Photomosaic(target_file_path, tile_file_path, hor_tiles, ver_tiles, tile_opacity)
-
-        for tiles_done in photomosaic.transform():
-            print(tiles_done)
+        transformed_img_path = Photomosaic(target_file_path, tile_file_path, hor_tiles, ver_tiles, tile_opacity).transform(temp_dir.name)
         
-        transformed_img_path = photomosaic.save_image(temp_dir.name)
-        print(transformed_img_path)
+        #print(transformed_img_path)
+        increase_count()
         return send_file(transformed_img_path, as_attachment=True)
 
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=5100)
-    #socketio.run(app)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
