@@ -1,3 +1,5 @@
 *.jpeg
 *.jpg 
 *.png
+env
+venv

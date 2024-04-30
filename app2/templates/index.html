@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo mosaic</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        *,
+        html,
+        input,
+        input[type=file]::file-selector-button,
+        body {
+            font-family: "IBM Plex Sans", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #e5e5f7;
+            opacity: 0.8;
+            background-image: radial-gradient(#b046bb 0.5px, #e5e5f7 0.5px);
+            background-size: 10px 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0px 10px;
+            background-color: white;
+        }
+
+        #banner>a {
+            text-decoration: none;
+            color: white;
+            background-color: black;
+            border-radius: 5px;
+            padding: 8px 15px;
+            margin-right: 100px;
+        }
+
+        #banner>p {
+            font-weight: bold;
+            letter-spacing: .1px;
+        }
+
+        .container {
+            width: 30%;
+            margin: 100px auto;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.50);
+            border-radius: 10px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        label,
+        input {
+            display: block;
+        }
+
+        .header {
+            font-size: 1.5rem;
+        }
+
+        #imagebox {
+            width: 100%;
+            height: 400px;
+            border: 0.1px solid cadetblue;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #imagebox img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .btn {
+            padding: 5px 30px;
+            width: 100%;
+            background: cadetblue;
+            font-size: .9rem;
+        }
+
+        #fancy-header {
+            font-size: 2rem;
+            color: white;
+            text-align: center;
+        }
+
+        .info {
+            font-size: 1.09rem;
+            text-decoration: underline;
+        }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                width: 60%;
+                margin: 50px auto;
+                padding: 20px;
+                border-radius: 5px;
+                padding-bottom: 50px;
+            }
+            #banner>a {
+                margin-right: 20px;
+            }
+            #imagebox {
+                height: 250px;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media screen and (max-width: 425px) {
+            .container {
+                width: 100%;
+                margin: 20px auto;
+                padding: 10px;
+                border-radius: 0px;
+                height: 100%;
+                padding-bottom: 100px;
+            }
+            
+            #banner>a {
+                margin-right: 20px;
+            }
+            #imagebox {
+                height: 200px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="banner">
+        <p>Photo Mosaic Creator</p>
+        <a href="mailto:adegokesimi@gmail.com?Subject=Feedback%20for%20Photo%20Mosaic%20Creator">Give Feeback</a>
+    </div>
+    <div class="container">
+        <div>
+            <p style="font-style: italic;">Are you looking to turn your favorite photos into stunning mosaics? Look no
+                further!
+                Our Photo Mosaic Creator is here to transform your memories into beautiful works of art.</p>
+
+            <p style="font-weight: bold;">What is a photo mosaic, you ask? It's a unique way of combining multiple
+                images into one larger image.
+                Imagine your holiday snapshots, family portraits, or pet photos seamlessly woven together to form a
+                larger
+                masterpiece.</p>
+            <p class="info">
+                &#10035; Select the main image &#10035; Select the multiple images &#10035; Download and share
+            </p>
+            <form id="uploadForm" action="/" method="post" enctype="multipart/form-data">
+                <div id="imagebox"></div>
+                <label>1. Select main image</label>
+                <input id="single_file" type="file" name="single_file" accept="image/*"
+                    onchange="previewImage(event)" required/> <br>
+                <label>2. Select tile images:</label>
+
+                <input id="multi_files" type="file" name="multi_files" accept="image/*" multiple required/> <br> <br>
+                <input type="submit" value="GENERATE PHOTOMOSAIC IMAGE" class="btn">
+            </form>
+        </div>
+    </div>
+
+    <p style="text-align: center;">created by <span style="font-weight: bold;"><a href="https://twitter.com/0xfatherstreet">simi</a></span></p>
+
+    <script>
+        function updateValue(val) {
+            document.getElementById('sliderValue').textContent = val;
+        }
+        function previewImage(event) {
+            var file = event.target.files[0];
+            console.log(file)
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var imageView = document.getElementById('imagebox');
+                    imageView.innerHTML = ''; // Clear previous content
+                    var img = document.createElement('img');
+                    img.src = e.target.result;
+                    imageView.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        let counterValue = 10;
+        const counterElement = document.getElementById('counter');
+
+        function updateCounter() {
+            counterElement.textContent = counterValue;
+            document.getElementById('hor_tile').value = counterValue;
+        }
+
+        function increase() {
+            counterValue++;
+            updateCounter();
+        }
+
+        function decrease() {
+            if (counterValue > 10) {
+                counterValue--;
+                updateCounter();
+            }
+        }
+
+        let counterValueVer = 10;
+        const counterElementVer = document.getElementById('counterVer');
+
+        function updateCounterVer() {
+            counterElementVer.textContent = counterValueVer;
+            document.getElementById('ver_tile').value = counterValueVer;
+        }
+
+        function increaseVer() {
+            counterValueVer++;
+            updateCounterVer();
+        }
+
+        function decreaseVer() {
+            if (counterValueVer > 10) {
+                counterValueVer--;
+                updateCounterVer();
+            }
+        }
+    </script>
+</body>
+
+</html>
