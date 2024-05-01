@@ -182,12 +182,23 @@
     <p style="text-align: center;">created by <span style="font-weight: bold;"><a href="https://twitter.com/0xfatherstreet">simi</a></span></p>
 
     <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event){
+            //console.log('submitting')
+            var filesCount = document.getElementById('multi_files').files.length;
+            var minFiles = 10;
+            var maxFiles = 20;
+            console.log('files checking ..')
+            if(filesCount < minFiles || filesCount > maxFiles){
+                event.preventDefault();
+                alert('Please select between ' + minFiles + ' and ' + maxFiles + ' files.');
+            }
+        });
         function updateValue(val) {
             document.getElementById('sliderValue').textContent = val;
         }
         function previewImage(event) {
             var file = event.target.files[0];
-            console.log(file)
+            //console.log(file)
             if (file) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
