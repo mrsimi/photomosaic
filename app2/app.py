@@ -3,6 +3,7 @@ import os
 import tempfile
 from photomosaic import Photomosaic
 import traceback
+from photomosaic_fun import process_optimized
 
 
 app = Flask(__name__)
@@ -57,7 +58,9 @@ def upload_form():
         print(f'Target file path {target_file_path}')
         print(f'Tile images: {tile_file_path}')
 
-        result_file = Photomosaic(tile_file_path, target_file_path, temp_dir.name, mosaic_size=40, divisions=40,tile_choice=5).process()
+        #result_file = Photomosaic(tile_file_path, target_file_path, temp_dir.name, mosaic_size=40, divisions=40,tile_choice=5).process()
+        result_file = process_optimized(target_file_path, tile_file_path,50,temp_dir.name)
+        #result_file = result.save(f'{temp_dir.name}/download.jpg')
         print('result file ', result_file)
         return send_file(result_file, as_attachment=True)
     
