@@ -38,9 +38,10 @@ def upload_form():
     temp_dir = tempfile.TemporaryDirectory()
     target_file_path = ''
     tile_file_path = []
-    divisions = int(request.form['slider']) if request.form['slider'] else 20
+    
 
     if request.method == 'POST':
+        divisions = int(request.form['slider']) if request.form['slider'] else 20
         files = request.files.getlist('multi_files')
         for file in files:
             if file.filename == '':
