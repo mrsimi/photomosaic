@@ -59,7 +59,7 @@ def upload_form():
         print(f'Tile images: {tile_file_path}')
 
         #result_file = Photomosaic(tile_file_path, target_file_path, temp_dir.name, mosaic_size=40, divisions=40,tile_choice=5).process()
-        result_file = process_optimized(target_file_path, tile_file_path,50,temp_dir.name)
+        result_file = process_optimized(target_file_path, tile_file_path,30,temp_dir.name)
         #result_file = result.save(f'{temp_dir.name}/download.jpg')
         print('result file ', result_file)
         return send_file(result_file, as_attachment=True)
