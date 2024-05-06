@@ -15,11 +15,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo mosaic</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-        rel="stylesheet">
+        rel="stylesheet"> -->
 
     <style>
         *,
@@ -27,7 +27,7 @@
         input,
         input[type=file]::file-selector-button,
         body {
-            font-family: "IBM Plex Sans", sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
         }
 
         body {
@@ -170,11 +170,11 @@
                 further!
                 Our Photo Mosaic Creator is here to transform your memories into beautiful works of art.</p>
 
-            <p style="font-weight: bold;">What is a photo mosaic, you ask? It's a unique way of combining multiple
+            <p class="info"><b>What is a photo mosaic, you ask? It's a unique way of combining multiple
                 images into one larger image.
                 Imagine your holiday snapshots, family portraits, or pet photos seamlessly woven together to form a
                 larger
-                masterpiece.</p>
+                masterpiece.</b></p>
             <p class="info">
                 &#10035; Select the main image &#10035; Select the multiple images &#10035; Download and share
             </p>
