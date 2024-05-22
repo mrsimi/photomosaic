@@ -4,3 +4,5 @@ pillow==10.3.0
 scipy
 matplotlib
 gunicorn
+azure-storage-blob 
+azure-identity

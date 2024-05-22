@@ -4,6 +4,7 @@ import tempfile
 from photomosaic import Photomosaic
 import traceback
 from photomosaic_fun import process_optimized
+#from blob_storage import BlobStorageUtil
 
 
 app = Flask(__name__)
@@ -36,13 +37,17 @@ def internal_server_error(e):
 @app.route('/', methods=['GET', 'POST'])
 def upload_form():
     temp_dir = tempfile.TemporaryDirectory()
+    #blob_dir = BlobStorageUtil()
     target_file_path = ''
     tile_file_path = []
     
 
     if request.method == 'POST':
+        #blob_dir.create_container()
+
         divisions = int(request.form['slider']) if request.form['slider'] else 20
         files = request.files.getlist('multi_files')
+        #tile_file_path = blob_dir.upload_multiple_files(files)
         for file in files:
             if file.filename == '':
                 continue
@@ -55,7 +60,9 @@ def upload_form():
         if single_file.filename != '':
             single_file_path = os.path.join(temp_dir.name, single_file.filename)
             single_file.save(single_file_path)
+            #single_file_path = blob_dir.upload_single_file(single_file)
             target_file_path = single_file_path
+
         
         print(f'Target file path {target_file_path}')
         print(f'Tile images: {tile_file_path}')
@@ -63,7 +70,9 @@ def upload_form():
         #result_file = Photomosaic(tile_file_path, target_file_path, temp_dir.name, mosaic_size=40, divisions=40,tile_choice=5).process()
         result_file = process_optimized(target_file_path, tile_file_path,divisions,temp_dir.name)
         #result_file = result.save(f'{temp_dir.name}/download.jpg')
-        print('result file ', result_file)
+        #print('result file ', result_file)
+        #blob_dir.delete_container()
+
         return send_file(result_file, as_attachment=True)
     
     return render_template('index.html')

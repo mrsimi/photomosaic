@@ -181,7 +181,7 @@
             <form id="uploadForm" action="/" method="post" enctype="multipart/form-data">
                 <div id="imagebox"></div>
                 <label>1. Select main image</label>
-                <input id="single_file" type="file" name="single_file" accept="image/*" onchange="previewImage(event)"
+                <input id="single_file" type="file" name="single_file" accept="image/*"
                     required /> <br>
                 <label>2. Select tile images:</label>
 
@@ -196,21 +196,58 @@
         </div>
     </div>
 
-    <p style="text-align: center;">created by <span style="font-weight: bold;"><a
-                href="https://twitter.com/0xfatherstreet">simi</a></span></p>
+    <p style="text-align: center;">created by <span style="font-weight: bold;">
+        <a href="https://twitter.com/0xfatherstreet">simi</a></span>
+    </p>
 
     <script>
+       
         document.getElementById('uploadForm').addEventListener('submit', function (event) {
-            //console.log('submitting')
-            var filesCount = document.getElementById('multi_files').files.length;
+            var filesInput = document.getElementById('multi_files');
+            var files = filesInput.files;
+            var filesCount = files.length;
             var minFiles = 10;
             var maxFiles = 20;
-            console.log('files checking ..')
+            var maxFileSizeInBytes = 1 * 1024 * 1024; // 10 MB
+        
+            // Check the number of files
             if (filesCount < minFiles || filesCount > maxFiles) {
                 event.preventDefault();
                 alert('Please select between ' + minFiles + ' and ' + maxFiles + ' files.');
+                return;
+            }
+        
+            // Check the size of each file
+            for (var i = 0; i < files.length; i++) {
+                var fileSize = files[i].size;
+                console.log(fileSize)
+                if (fileSize > maxFileSizeInBytes) {
+                    event.preventDefault();
+                    alert('File ' + files[i].name + ' exceeds the maximum file size limit of 10 MB.');
+                    return;
+                }
             }
         });
+
+        const single_file = document.getElementById('single_file')
+
+        single_file.addEventListener('change', (event) => {
+        const target = event.target
+            if (target.files && target.files[0]) {
+
+            /*Maximum allowed size in bytes
+                5MB Example
+                Change first operand(multiplier) for your needs*/
+            const maxAllowedSize = 1 * 1024 * 1024;
+            if (target.files[0].size > maxAllowedSize) {
+                // Here you can ask your users to load correct file
+                alert('File ' + target.files[0].name + ' exceeds the maximum file size limit of 1 MB.');
+                return;
+            }
+            //previewImage(event)
+        }
+        })
+        
         function updateValue(val) {
             document.getElementById('sliderValue').textContent = val;
         }
@@ -271,5 +308,4 @@
         }
     </script>
 </body>
-
 </html>
